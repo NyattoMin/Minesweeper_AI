@@ -234,7 +234,26 @@ class MinesweeperAI():
                         sentence2.count - sentence1.count)
                     if new_knowledge not in self.knowledge:
                         self.knowledge.append(new_knowledge)
+                        
+    def isDone(arr, visited):
+        done = True
+        for i in range(len(arr)):
+            for j in range(len(arr[0])):
+                done = done and (arr[i][j] == 0) and visited[i][j]
+        return done
 
+    # def backtrack_move(self):
+    #     # If the solver is finished we are done
+    #     if len(self.mines) + len(self.moves_made) == self.height * self.width:
+    #         return True
+    #     # Find any unvisited, if all cells are visited and solver is done, then no solution can be found
+    #     available_steps = self.safes - self.moves_made
+    #     if not available_steps:
+    #         return False
+    #     x, y = list(available_steps)[0]
+    #     make_move
+    #     return False
+    
     def make_safe_move(self):
         """
         Returns a safe cell to choose on the Minesweeper board.

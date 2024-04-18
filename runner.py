@@ -7,7 +7,7 @@ from minesweeper import Minesweeper, MinesweeperAI
 
 HEIGHT = 16
 WIDTH = 16
-MINES = 20
+MINES = 30
 
 grid_color = (128, 128, 128)
 
@@ -67,12 +67,6 @@ spr_dict = {
     "spr_grid8": spr_grid8
 }
 
-# Add images
-flag = pygame.image.load("assets/images/flag.png")
-flag = pygame.transform.scale(flag, (cell_size, cell_size))
-mine = pygame.image.load("assets/images/mine.png")
-mine = pygame.transform.scale(mine, (cell_size, cell_size))
-
 # Create game and AI agent
 game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES)
 ai = MinesweeperAI(height=HEIGHT, width=WIDTH)
@@ -85,9 +79,12 @@ lost = False
 # Show instructions initially
 instructions = True
 
+# Backtracking game
+backtrack = False
+
 # Autoplay game
 autoplay = False
-autoplaySpeed = 0.3
+autoplaySpeed = 0.01
 makeAiMove = False
 
 while True:
@@ -176,7 +173,7 @@ while True:
 
     # Autoplay Button
     autoplayBtn = pygame.Rect(
-        (2 / 3) * width + BOARD_PADDING, BOARD_PADDING,
+        (2 / 3) * width + BOARD_PADDING, (1 / 3) * height - 120,
         (width / 3) - BOARD_PADDING * 2, 50
     )
     bText = "Autoplay" if not autoplay else "Stop"
@@ -200,9 +197,21 @@ while True:
         pygame.draw.rect(screen, WHITE, aiButton)
         screen.blit(buttonText, buttonRect)
 
+    # Backtracking Autoplay Button
+    backtrackingBtn = pygame.Rect(
+        (2 / 3) * width + BOARD_PADDING, (1 / 3) * height + 20,
+        (width / 3) - BOARD_PADDING * 2, 50
+    )
+    bText = "Backtracking" if not backtrack else "Stop"
+    buttonText = mediumFont.render(bText, True, BLACK)
+    buttonRect = buttonText.get_rect()
+    buttonRect.center = backtrackingBtn.center
+    pygame.draw.rect(screen, WHITE, backtrackingBtn)
+    screen.blit(buttonText, buttonRect)
+    
     # Reset button
     resetButton = pygame.Rect(
-        (2 / 3) * width + BOARD_PADDING, (1 / 3) * height + 20,
+        (2 / 3) * width + BOARD_PADDING, (1 / 3) * height + 90,
         (width / 3) - BOARD_PADDING * 2, 50
     )
     buttonText = mediumFont.render("Reset", True, BLACK)
@@ -218,7 +227,7 @@ while True:
     text = "Lost" if lost else "Won" if game.mines == flags else ""
     text = mediumFont.render(text, True, WHITE)
     textRect = text.get_rect()
-    textRect.center = ((5 / 6) * width, (2 / 3) * height)
+    textRect.center = ((5 / 6) * width, (2 / 3) * height + 70)
     screen.blit(text, textRect)
 
     move = None
@@ -263,6 +272,14 @@ while True:
                 print("AI making safe move.")
             time.sleep(0.2)
 
+        # If Autoplay button clicked, toggle autoplay
+        if backtrackingBtn.collidepoint(mouse):
+            if not lost:
+                backtrack = not backtrack
+            else:
+                backtrack = False
+            time.sleep(0.2)
+            continue
         
         # Reset game state
         elif resetButton.collidepoint(mouse):
@@ -304,6 +321,17 @@ while True:
                         if 0 <= i < HEIGHT and 0 <= j < WIDTH and (i, j) not in revealed:
                             make_move((i, j))
                             
+    # If backtracking is enabled
+    # if backtrack:
+    #     if makeAiMove:
+    #         makeAiMove = False
+    #     if revealed:
+    #         move = ai.make_safe_move()
+    #     else:
+    #         move = (round(HEIGHT/2), round(WIDTH/2))
+    #     if move is None:
+    #     pass
+    
     # If autoplay, make move with AI
     if autoplay or makeAiMove:
         if makeAiMove:
