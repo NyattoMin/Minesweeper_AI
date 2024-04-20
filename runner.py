@@ -2,6 +2,7 @@ import pygame
 import sys
 import time
 import math
+import numpy as np
 
 from minesweeper import Minesweeper, MinesweeperAI
 
@@ -81,6 +82,7 @@ instructions = True
 
 # Backtracking game
 backtrack = False
+backtrack_called = False
 
 # Autoplay game
 autoplay = False
@@ -322,15 +324,31 @@ while True:
                             make_move((i, j))
                             
     # If backtracking is enabled
-    # if backtrack:
-    #     if makeAiMove:
-    #         makeAiMove = False
-    #     if revealed:
-    #         move = ai.make_safe_move()
-    #     else:
-    #         move = (round(HEIGHT/2), round(WIDTH/2))
-    #     if move is None:
-    #     pass
+    if backtrack:
+        if not backtrack_called:
+            arr = [[0 for _ in range(WIDTH)] for _ in range(HEIGHT)]
+            for i in range(HEIGHT):
+                for j in range(WIDTH):
+                    arr[i][j] = game.nearby_mines((i, j))
+                    print(arr[i][j], end=" ")
+                print(end = "\n")
+            grid = np.zeros((HEIGHT, WIDTH), dtype=bool)
+            grid = ai.backtrack_call(arr, HEIGHT, WIDTH)
+            print(grid)
+            # for i in range(HEIGHT):
+            #     for j in range(WIDTH):
+            #         if grid[i][j] is not None:
+            #             ai.mark_mine((i, j))
+            #         else:
+            #             ai.mark_safe((i, j))
+            backtrack_called = True
+        else:
+            move = ai.make_safe_move()
+        if move is None:
+            backtrack = False
+            
+        if backtrack:
+            time.sleep(autoplaySpeed)
     
     # If autoplay, make move with AI
     if autoplay or makeAiMove:
