@@ -1,14 +1,13 @@
 import pygame
 import sys
 import time
-import math
-import numpy as np
+import tracemalloc as cpu
 
 from minesweeper import Minesweeper, MinesweeperAI
 
-HEIGHT = 16
-WIDTH = 16
-MINES = 30
+HEIGHT = 7
+WIDTH = 7
+MINES = 10
 
 grid_color = (128, 128, 128)
 
@@ -19,6 +18,13 @@ WHITE = (255, 255, 255)
 
 NUM_COLOR = [(0, 0, 255), (0, 128, 0), (255, 0, 0), (0, 0, 128),
              (128, 0, 0), (0, 128, 128), (0, 0, 0), (128, 128, 128)]
+
+# Calculate time
+start_time = 0
+end_time = 0
+
+# Calculate memory
+memory_use = 0
 
 # Create game
 pygame.init()
@@ -204,7 +210,7 @@ while True:
         (2 / 3) * width + BOARD_PADDING, (1 / 3) * height + 20,
         (width / 3) - BOARD_PADDING * 2, 50
     )
-    bText = "Backtracking" if not backtrack else "Stop"
+    bText = "Backtrack" if not backtrack else "Stop"
     buttonText = mediumFont.render(bText, True, BLACK)
     buttonRect = buttonText.get_rect()
     buttonRect.center = backtrackingBtn.center
@@ -225,11 +231,25 @@ while True:
         pygame.draw.rect(screen, WHITE, resetButton)
         screen.blit(buttonText, buttonRect)
 
+    # Display time
+    time_count = ('%.5f' % (end_time - start_time)) if (lost or game.mines == flags) else ""
+    time_count = mediumFont.render(time_count, True, WHITE)
+    time_countRect = time_count.get_rect()
+    time_countRect.center = ((5 / 6) * width, (2 / 3) * height + 30)
+    screen.blit(time_count, time_countRect)
+    
+    # Display memory usage
+    memory_usage = str(memory_use) if (lost or game.mines == flags) else ""
+    memory_usage = mediumFont.render(memory_usage, True, WHITE)
+    memory_usageRect = memory_usage.get_rect()
+    memory_usageRect.center = ((5 / 6) * width, (2 / 3) * height + 65)
+    screen.blit(memory_usage, memory_usageRect)
+    
     # Display text
     text = "Lost" if lost else "Won" if game.mines == flags else ""
     text = mediumFont.render(text, True, WHITE)
     textRect = text.get_rect()
-    textRect.center = ((5 / 6) * width, (2 / 3) * height + 70)
+    textRect.center = ((5 / 6) * width, (2 / 3) * height + 100)
     screen.blit(text, textRect)
 
     move = None
@@ -258,6 +278,8 @@ while True:
             else:
                 autoplay = False
             time.sleep(0.2)
+            start_time = time.time()
+            cpu.start()
             continue
         
         # If AI button clicked, make an AI move
@@ -281,6 +303,8 @@ while True:
             else:
                 backtrack = False
             time.sleep(0.2)
+            start_time = time.time()
+            cpu.start()
             continue
         
         # Reset game state
@@ -289,6 +313,7 @@ while True:
             ai = MinesweeperAI(height=HEIGHT, width=WIDTH)
             revealed = set()
             flags = set()
+            backtrack = False
             lost = False
             continue
 
@@ -324,31 +349,38 @@ while True:
                             make_move((i, j))
                             
     # If backtracking is enabled
-    if backtrack:
+    if backtrack and not lost:
         if not backtrack_called:
             arr = [[0 for _ in range(WIDTH)] for _ in range(HEIGHT)]
+            print("Generated board")
             for i in range(HEIGHT):
                 for j in range(WIDTH):
-                    arr[i][j] = game.nearby_mines((i, j))
+                    arr[i][j] = game.nearby_mines((i, j)) + game.board[i][j]
                     print(arr[i][j], end=" ")
-                print(end = "\n")
-            grid = np.zeros((HEIGHT, WIDTH), dtype=bool)
-            grid = ai.backtrack_call(arr, HEIGHT, WIDTH)
-            print(grid)
-            # for i in range(HEIGHT):
-            #     for j in range(WIDTH):
-            #         if grid[i][j] is not None:
-            #             ai.mark_mine((i, j))
-            #         else:
-            #             ai.mark_safe((i, j))
+                print()
+                
+            grid = ai.minesweeperOperations(arr, HEIGHT, WIDTH)
+            if grid is not None:
+                for i in range(HEIGHT):
+                    for j in range(WIDTH):
+                        if grid[i][j]:
+                            ai.mark_mine((i, j))
+                        else:
+                            ai.mark_safe((i, j))
+            flags = ai.mines.copy()
             backtrack_called = True
         else:
             move = ai.make_safe_move()
-        if move is None:
-            backtrack = False
-            
-        if backtrack:
-            time.sleep(autoplaySpeed)
+            if move is None:
+                memory_use = cpu.get_traced_memory()[1]
+                cpu.stop()
+                end_time = time.time()
+                backtrack = False
+                backtrack_called = False
+
+        # Add delay for backtrack
+        # if backtrack:
+        #     time.sleep(autoplaySpeed)
     
     # If autoplay, make move with AI
     if autoplay or makeAiMove:
@@ -362,6 +394,9 @@ while True:
             move = ai.make_random_move()
             if move is None:
                 flags = ai.mines.copy()
+                memory_use = cpu.get_traced_memory()[1]
+                cpu.stop()
+                end_time = time.time()
                 print("No moves left to make.")
                 autoplay = False
             else:
@@ -370,8 +405,8 @@ while True:
             print("AI making safe move.")
 
         # Add delay for autoplay
-        if autoplay:
-            time.sleep(autoplaySpeed)
+        # if autoplay:
+        #     time.sleep(autoplaySpeed)
 
     # Make move and update AI knowledge
     if move:

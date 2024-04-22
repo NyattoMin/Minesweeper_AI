@@ -1,4 +1,3 @@
-import itertools
 import random
 import numpy as np
 
@@ -38,14 +37,12 @@ class Minesweeper():
         """Prints a text-based representation of where mines are located."""
 
         for i in range(self.height):
-            print("--" * self.width + "-")
             for j in range(self.width):
                 if self.board[i][j]:
-                    print("|X", end="")
+                    print("x", end=" ")
                 else:
-                    print("| ", end="")
-            print("|")
-        print("--" * self.width + "-")
+                    print("_", end=" ")
+            print()
 
     def is_mine(self, cell):
         i, j = cell
@@ -252,19 +249,15 @@ class MinesweeperAI():
             print()
     
     def isSafe(self, arr, x, y, N, M):
-        # Check if the cell (x, y) is a valid cell or not
         if not self.isValid(x, y, N, M):
             return False
     
-        # Check if any of the neighbouring cell of (x, y) supports (x, y) to have a mine
         for i in range(9):
             if self.isValid(x + dx[i], y + dy[i], N, M) and (arr[x + dx[i]][y + dy[i]] - 1 < 0):
                 return False
     
-        # If (x, y) is valid to have a mine
         for i in range(9):
             if self.isValid(x + dx[i], y + dy[i], N, M):
-                # Reduce count of mines in the neighboring cells
                 arr[x + dx[i]][y + dy[i]] -= 1
     
         return True
@@ -283,69 +276,49 @@ class MinesweeperAI():
                 done = done and (arr[i][j] == 0) and visited[i][j]
         return done
     
+    # Function to solve the minesweeper matrix
     def SolveMinesweeper(self, grid, arr, visited, N, M):
-        # Function call to check if each cell is visited and the solved grid is satisfying the given input matrix
         done = self.isDone(arr, visited)
-    
-        # If the solution exists and all cells are visited
         if done:
             return True
     
         x, y = self.findUnvisited(visited)
-    
-        # Function call to check if all the cells are visited or not
         if x == -1 and y == -1:
             return False
-    
-        # Mark cell (x, y) as visited
         visited[x][y] = True
     
-        # Function call to check if it is safe to assign a mine at (x, y)
         if self.isSafe(arr, x, y, N, M):
-            # Mark the position with a mine
             grid[x][y] = True
     
-            # Recursive call with (x, y) having a mine
             if self.SolveMinesweeper(grid, arr, visited, N, M):
-                # If solution exists, then return true
                 return True
     
-            # Reset the position x, y
             grid[x][y] = False
             for i in range(9):
                 if self.isValid(x + dx[i], y + dy[i], N, M):
                     arr[x + dx[i]][y + dy[i]] += 1
     
-        # Recursive call without (x, y) having a mine
         if self.SolveMinesweeper(grid, arr, visited, N, M):
-            # If solution exists then return true
             return True
     
-        # Mark the position as unvisited again
         visited[x][y] = False
     
-        # If no solution exists
         return False
-        
+    
     def minesweeperOperations(self, arr, N, M):
-        # Stores the final result
         grid = np.zeros((N, M), dtype=bool)
     
-        # Stores whether the position (x, y) is visited or not
         visited = np.zeros((N, M), dtype=bool)
     
-        # If the solution to the input minesweeper matrix exists
         if self.SolveMinesweeper(grid, arr, visited, N, M):
-            # Function call to print the grid[][]
             self.printGrid(grid)
             return grid
-        # No solution exists
         else:
             print("No solution exists")
-            UserWarning("No solution exists")                        
+            return None                  
 
     def backtrack_call(self, arr, M, N):
-        return self.minesweeperOperations(arr, M, N)
+        self.minesweeperOperations(arr, M, N)
     
     def make_safe_move(self):
         """
